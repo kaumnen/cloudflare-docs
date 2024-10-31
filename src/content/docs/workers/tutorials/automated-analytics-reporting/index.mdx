@@ -32,9 +32,9 @@ Before you start, make sure you:
 
 <Render file="prereqs" product="workers" />
 
-3. [Add a domain](https://developers.cloudflare.com/fundamentals/setup/manage-domains/add-site/) to your Cloudflare account.
-4. [Enable Email Routing](https://developers.cloudflare.com/email-routing/get-started/enable-email-routing/) for your domain.
-5. Create Cloudflare's [Analytics API token](https://developers.cloudflare.com/analytics/graphql-api/getting-started/authentication/api-token-auth/).
+3. [Add a domain](/fundamentals/setup/manage-domains/add-site/) to your Cloudflare account.
+4. [Enable Email Routing](/email-routing/get-started/enable-email-routing/) for your domain.
+5. Create Cloudflare's [Analytics API token](/analytics/graphql-api/getting-started/authentication/api-token-auth/).
 
 ## Create a Worker
 
@@ -60,7 +60,7 @@ In this tutorial, we will name our Worker `account-analytics`.
 	}}
 />
 
-Now, the worker is set up. Move into that project directory.
+Now, the Worker is set up. Move into that project directory.
 
 ```sh
 cd account-analytics
@@ -134,7 +134,7 @@ Before you continue, update the following:
 3. `[VARS]` with the environment variable values you want to use in your Worker.
 
 :::note[IMPORTANT]
-`destination_address` and `RECIPIENT_EMAIL` **must** contain [Email Routing verified email](https://developers.cloudflare.com/email-routing/get-started/enable-email-routing/) address.
+`destination_address` and `RECIPIENT_EMAIL` **must** contain [Email Routing verified email](/email-routing/get-started/enable-email-routing/) address.
 
 `SENDER_EMAIL` **must** be address on a domain that:
 
@@ -398,7 +398,7 @@ If you want to disable a public URL for your Worker, you can do so by following 
 
 4. Click 'Disable' to disable the public `account-analytics.<YOUR_SUBDOMAIN>.workers.dev` URL.
 
-You have successfully created, tested and deployed a Worker that fetches analytics data from Cloudflare’s GraphQL Analytics API and sends an email report via Email Routing.
+You have successfully created, tested and deployed a Worker that fetches analytics data from Cloudflare's GraphQL Analytics API and sends an email report via Email Routing.
 
 ## Related resources
 
