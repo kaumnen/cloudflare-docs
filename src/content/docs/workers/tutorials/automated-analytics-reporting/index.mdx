@@ -1,5 +1,5 @@
 ---
-updated: 2024-10-31
+updated: 2024-11-01
 difficulty: Beginner
 content_type: 📝 Tutorial
 pcx_content_type: tutorial
@@ -144,13 +144,19 @@ Before you continue, update the following:
 
 ## Update the Worker code
 
+You will now add the code step by step to the `src/index.js` file. We will explain each part of the code as we go along.
+
+### Add the required modules and Handlers
+
 While you are in your project directory, open `src/index.js` in your code editor and update it with the following code:
 
 ```js
+// Import required modules for email handling
 import { EmailMessage } from "cloudflare:email";
 import { createMimeMessage } from "mimetext";
 
 export default {
+	// HTTP request handler - This Handler is invoked when the Worker is accessed via HTTP
 	async fetch(request, env, ctx) {
 		try {
 			const analyticsData = await fetchAnalytics(env);
@@ -170,6 +176,7 @@ export default {
 		}
 	},
 
+	// Scheduled task handler - This Handler is invoked via a Cron Trigger
 	async scheduled(event, env, ctx) {
 		try {
 			const analyticsData = await fetchAnalytics(env);
@@ -184,8 +191,20 @@ export default {
 		}
 	},
 };
+```
 
+In the code above, we have defined two [Worker Handlers](/workers/runtime-apis/handlers/):
+
+- `fetch`: This Handler executes when the Worker is accessed via HTTP. It fetches the analytics data, formats it and returns it as a response.
+- `scheduled`: This Handler executes at the scheduled time. It fetches the analytics data, formats it and sends an email with the analytics data.
+
+### Add the analytics fetching function
+
+Add the following function to the `src/index.js` file, below the Handlers:
+
+```js
 async function fetchAnalytics(env) {
+	// Calculate yesterday's date for the report and format it for display
 	const yesterday = new Date();
 	yesterday.setDate(yesterday.getDate() - 1);
 	const dateString = yesterday.toISOString().split("T")[0];
@@ -196,6 +215,7 @@ async function fetchAnalytics(env) {
 		day: "numeric",
 	});
 
+	// Fetch analytics data from Cloudflare's GraphQL Analytics API
 	const response = await fetch(`https://api.cloudflare.com/client/v4/graphql`, {
 		method: "POST",
 		headers: {
@@ -249,11 +269,35 @@ async function fetchAnalytics(env) {
 
 	return { data, formattedDate };
 }
+```
 
+In the code above, we have defined a function `fetchAnalytics` that fetches analytics data from Cloudflare's GraphQL Analytics API. The function calculates yesterday's date, formats it for display, and sends a GraphQL query to the Analytics API to fetch the analytics data.
+
+:::note
+`env.CF_API_TOKEN` and `env.CF_ACCOUNT_ID` are [Worker Secrets](/workers/configuration/secrets/). These variables are used to authenticate the request and fetch the analytics data for the specified account. You will add these secrets to your Worker after the code is complete.
+:::
+
+This function returns the **raw** data for the previous day, including:
+
+- Traffic overview data (Total requests, Page views and Blocked threats)
+- Bandwidth data (Total bandwidth, Encrypted bandwidth and Cached bandwidth)
+- Caching & Encryption data (Encrypted requests, Cached requests, Encryption rate and Cache rate)
+- Browser data (Page views by browser)
+- HTTP status code data (Requests by status code)
+- HTTP version data (Requests by HTTP version)
+
+This data will be used to generate the analytics report. Let's add the function that formats this data.
+
+### Add the data formatting function
+
+Add the following function to the `src/index.js` file, below the `fetchAnalytics` function:
+
+```js
 function formatContent(analyticsData, formattedDate) {
 	const stats =
 		analyticsData.data.viewer.accounts[0].httpRequests1dGroups[0].sum;
 
+	// Helper function to format bytes into human-readable format
 	const formatBytes = (bytes) => {
 		if (bytes === 0) return "0 Bytes";
 		const k = 1024;
@@ -262,21 +306,25 @@ function formatContent(analyticsData, formattedDate) {
 		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 	};
 
+	// Format browser statistics
 	const browserData = stats.browserMap
 		.sort((a, b) => b.pageViews - a.pageViews)
 		.map((b) => `    ${b.uaBrowserFamily}: ${b.pageViews} views`)
 		.join("\n");
 
+	// Format HTTP status code statistics
 	const statusData = stats.responseStatusMap
 		.sort((a, b) => b.requests - a.requests)
 		.map((s) => `    ${s.edgeResponseStatus}: ${s.requests} requests`)
 		.join("\n");
 
+	// Format HTTP version statistics
 	const httpVersionData = stats.clientHTTPVersionMap
 		.sort((a, b) => b.requests - a.requests)
 		.map((h) => `    ${h.clientHTTPProtocol}: ${h.requests} requests`)
 		.join("\n");
 
+	// Return formatted report
 	return `
 CLOUDFLARE ANALYTICS REPORT
 ==========================
@@ -315,8 +363,17 @@ HTTP VERSIONS
 ${httpVersionData}
 `;
 }
+```
 
+At this point, you have defined the `fetchAnalytics` function that fetches raw analytics data from Cloudflare's GraphQL Analytics API and the `formatContent` function that formats the analytics data into a human-readable report.
+
+### Add the email sending function
+
+Add the following function to the `src/index.js` file, below the `formatContent` function:
+
+```js
 async function sendEmail(env, content) {
+	// Create and configure email message
 	const msg = createMimeMessage();
 
 	msg.setSender({
@@ -332,6 +389,7 @@ async function sendEmail(env, content) {
 		data: content,
 	});
 
+	// Send email using Cloudflare Email Routing service
 	const message = new EmailMessage(
 		env.SENDER_EMAIL,
 		env.RECIPIENT_EMAIL,
@@ -345,6 +403,12 @@ async function sendEmail(env, content) {
 	}
 }
 ```
+
+This function sends an email with the formatted analytics data to the specified recipient email address using Cloudflare's Email Routing service.
+
+:::note
+`sendEmail` function uses multiple environment variables that are set in the `wrangler.toml` file.
+:::
 
 ## Test the Worker
 
@@ -384,7 +448,7 @@ CLI command will output the URL where your Worker is deployed. Before you can vi
 npx wrangler secret put <secret>
 ```
 
-Change `<secret>` with the name of the secret you want to add. Repeat this command for `CF_API_TOKEN` and `CF_ACCOUNT_ID` secrets.
+Replace `<secret>` with the name of the secret you want to add. Repeat this command for `CF_API_TOKEN` and `CF_ACCOUNT_ID` secrets.
 
 Once you put the secrets, visit the `account-analytics.<YOUR_SUBDOMAIN>.workers.dev` to view the analytics data. You will also receive an email report to the specified recipient email address every day at 10:00 AM.
 
