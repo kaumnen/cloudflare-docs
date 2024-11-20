@@ -1,5 +1,5 @@
 ---
-updated: 2024-11-01
+updated: 2024-11-20
 difficulty: Beginner
 content_type: 📝 Tutorial
 pcx_content_type: tutorial
@@ -96,8 +96,7 @@ yarn add mimetext
 name = "account-analytics"
 main = "src/index.js"
 
-# Set to the current date
-compatibility_date = "<>"
+compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
 # Set destination_address to the email address where you want to receive the report
@@ -129,9 +128,8 @@ EMAIL_SUBJECT = "Cloudflare Analytics Report"
 
 Before you continue, update the following:
 
-1. `compatibility_date`: Enter the current date.
-2. `destination_address`: Enter the email address where you want to receive the analytics report.
-3. `[VARS]`: Enter the environment variable values you want to use in your Worker.
+1. `destination_address`: Enter the email address where you want to receive the analytics report.
+2. `[VARS]`: Enter the environment variable values you want to use in your Worker.
 
 :::note[IMPORTANT]
 `destination_address` and `RECIPIENT_EMAIL` **must** contain [Email Routing verified email](/email-routing/get-started/enable-email-routing/) address.
